@@ -10,7 +10,11 @@
   "id": "biblia-rvr1960",
   "lang": "es",
   "dir": "ltr",
-  "categories": ["books", "education", "religion"],
+  "categories": [
+    "books",
+    "education",
+    "religion"
+  ],
   "icons": [
     {
       "src": "icon-192x192.png",
