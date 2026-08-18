@@ -28,8 +28,8 @@
   "shortcuts": [
     {
       "name": "Biblia",
-      "short_name": "Biblia",
-      "description": "Lee la Biblia en tu móvil",
+      "short_name": "Leer",
+      "description": "Abrir la Biblia",
       "url": ".",
       "icons": [
         {
