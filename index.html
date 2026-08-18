@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+
+    <title>📖 Biblia RVR1960</title>
+
+    <!-- Metadatos para PWA (App Móvil) -->
+    <meta name="theme-color" content="#1e2a3a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Biblia RVR1960">
+
+    <!-- Archivo de configuración de la App (Manifest) -->
+    <link rel="manifest" id="manifest-link">
+
+    <style>
+        /* --- Reset y Estilos Globales --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            background-color: #f4f6f8;
+            color: #212529;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: pan-y;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* --- App Container --- */
+        .app-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background: white;
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+
+        /* --- BARRA LATERAL (Menú deslizable) --- */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 85%;
+            max-width: 320px;
+            background-color: #1e2a3a;
+            color: #e9ecef;
+            z-index: 1000;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            padding: 20px 15px 15px 15px;
+            background-color: #15202b;
+            border-bottom: 1px solid #2c3e50;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #b0c4de;
+            text-transform: uppercase;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-header .version {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: #8899aa;
+        }
+
+        .sidebar-close-btn {
+            background: none;
+            border: none;
+            color: #b0c4de;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .sidebar-close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- ACORDEONES DE TESTAMENTOS --- */
+        .accordion-container {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 8px;
+        }
+
+        .accordion-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .accordion-container::-webkit-scrollbar-track {
+            background: #1e2a3a;
+        }
+
+        .accordion-container::-webkit-scrollbar-thumb {
+            background: #4a6fa5;
+            border-radius: 10px;
+        }
+
+        .testament-accordion {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            transition: border-color 0.3s ease;
+        }
+
+        .testament-accordion:last-child {
+            border-bottom: none;
+        }
+
+        .testament-header {
+            padding: 14px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #b0c4de;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+            min-height: 48px;
+            user-select: none;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid transparent;
+        }
+
+        .testament-header:active {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .testament-header .testament-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .testament-header .testament-icon {
+            font-size: 1.1rem;
+        }
+
+        .testament-header .testament-count {
+            font-size: 0.65rem;
+            font-weight: 400;
+            color: #6c8ba0;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+
+        .testament-header .accordion-arrow {
+            font-size: 0.7rem;
+            color: #6c8ba0;
+            transition: transform 0.3s ease, color 0.3s ease;
+            display: inline-block;
+        }
+
+        .testament-header .accordion-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .testament-header.active {
+            background-color: rgba(110, 168, 254, 0.08);
+            border-left-color: #6ea8fe;
+        }
+
+        .testament-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .testament-body.open {
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .testament-body .book-list {
+            padding: 4px 0 8px 0;
+        }
+
+        .book-item {
+            padding: 10px 20px 10px 35px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #ced4da;
+            transition: all 0.15s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            touch-action: manipulation;
+            min-height: 40px;
+            border-left: 2px solid transparent;
+        }
+
+        .book-item:active {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .book-item .book-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .book-item .book-icon {
+            font-size: 0.8rem;
+            opacity: 0.5;
+        }
+
+        .book-item .chapter-count {
+            font-size: 0.65rem;
+            background: #2c3e50;
+            color: #8899aa;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 400;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .book-item.active {
+            background-color: #2c3e50;
+            color: white;
+            border-left-color: #6ea8fe;
+            font-weight: 600;
+        }
+
+        .book-item.active .chapter-count {
+            background: #1e3a5f;
+            color: #b0c4de;
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #ffffff;
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+
+        /* --- BARRA SUPERIOR --- */
+        .top-bar {
+            background: white;
+            border-bottom: 1px solid #dee2e6;
+            padding: 8px 12px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .top-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 44px;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #1e3a5f;
+            touch-action: manipulation;
+            flex-shrink: 0;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+
+        .menu-toggle:active {
+            background: #f1f3f5;
+            transform: scale(0.95);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: #1e3a5f;
+            touch-action: manipulation;
+            flex-shrink: 0;
+            line-height: 1;
+            transition: all 0.2s;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:active {
+            background: #f1f3f5;
+            transform: scale(0.95);
+        }
+
+        .top-bar .book-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.3s ease;
+        }
+
+        .chapter-info {
+            font-size: 0.8rem;
+            color: #6c757d;
+            flex-shrink: 0;
+            background: #f1f3f5;
+            padding: 4px 10px;
+            border-radius: 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* --- PAGINACIÓN MÓVIL --- */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: center;
+            padding: 2px 0;
+            touch-action: manipulation;
+        }
+
+        .pagination-btn {
+            background: #f1f3f5;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            line-height: 1;
+            min-width: 36px;
+            text-align: center;
+            touch-action: manipulation;
+            min-height: 36px;
+        }
+
+        .pagination-btn:active:not(:disabled) {
+            background: #dee2e6;
+            transform: scale(0.95);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .chapter-numbers {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            max-width: 70vw;
+            overflow-x: auto;
+            padding: 2px 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .chapter-numbers::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chapter-number {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            color: #495057;
+            background: transparent;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+            min-width: 28px;
+            text-align: center;
+            touch-action: manipulation;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chapter-number:active {
+            background: #f1f3f5;
+            transform: scale(0.92);
+        }
+
+        .chapter-number.active {
+            background: #1e3a5f;
+            color: white;
+            border-color: #1e3a5f;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(30, 58, 95, 0.25);
+        }
+
+        .chapter-dots {
+            color: #6c757d;
+            padding: 0 2px;
+            font-size: 0.8rem;
+            user-select: none;
+            transition: color 0.3s ease;
+        }
+
+        /* --- ÁREA DE LECTURA --- */
+        .reading-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px 80px 16px;
+            background: #fafcff;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            transition: background-color 0.3s ease;
+        }
+
+        .chapter-container {
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .chapter-container .chapter-heading {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin: 20px 0 15px 0;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #e9ecef;
+            letter-spacing: -0.3px;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .chapter-container .chapter-heading:first-of-type {
+            margin-top: 0;
+        }
+
+        .chapter-verse {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 3px 0;
+            line-height: 1.8;
+        }
+
+        .verse-number {
+            font-weight: 700;
+            color: #a61e4d;
+            font-size: 0.7rem;
+            min-width: 24px;
+            text-align: right;
+            user-select: none;
+            opacity: 0.8;
+            padding-top: 2px;
+            flex-shrink: 0;
+            transition: color 0.3s ease;
+        }
+
+        .verse-text {
+            margin: 0;
+            padding: 0;
+            font-size: 1rem;
+            word-break: break-word;
+            transition: color 0.3s ease;
+        }
+
+        /* --- Estado vacío --- */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #6c757d;
+            text-align: center;
+            padding: 20px;
+            transition: color 0.3s ease;
+        }
+
+        .empty-state .icon {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            opacity: 0.4;
+        }
+
+        .empty-state h3 {
+            font-weight: 400;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+            max-width: 300px;
+        }
+
+        .reading-area::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .reading-area::-webkit-scrollbar-track {
+            background: #f1f3f5;
+        }
+
+        .reading-area::-webkit-scrollbar-thumb {
+            background: #ced4da;
+            border-radius: 10px;
+        }
+
+        /* --- INDICADOR DE PROGRESO --- */
+        .progress-bar {
+            height: 3px;
+            background: #e9ecef;
+            position: relative;
+            flex-shrink: 0;
+            transition: background-color 0.3s ease;
+        }
+
+        .progress-bar .progress-fill {
+            height: 100%;
+            background: #1e3a5f;
+            width: 0%;
+            transition: width 0.1s, background-color 0.3s ease;
+        }
+
+        /* --- ANIMACIONES --- */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chapter-container {
+            animation: slideIn 0.3s ease;
+        }
+
+        /* ============================================ */
+        /* ============ MODO OSCURO =================== */
+        /* ============================================ */
+        body.dark-mode {
+            background: #0d1117;
+            color: #e6edf3;
+        }
+
+        body.dark-mode .app-container {
+            background: #0d1117;
+        }
+
+        body.dark-mode .sidebar {
+            background-color: #161b22;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.6);
+        }
+
+        body.dark-mode .sidebar-header {
+            background-color: #0d1117;
+            border-bottom-color: #30363d;
+        }
+
+        body.dark-mode .sidebar-header h2 {
+            color: #8b949e;
+        }
+
+        body.dark-mode .sidebar-header .version {
+            color: #484f58;
+        }
+
+        body.dark-mode .sidebar-close-btn {
+            color: #8b949e;
+        }
+
+        body.dark-mode .sidebar-close-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        body.dark-mode .accordion-container::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        body.dark-mode .accordion-container::-webkit-scrollbar-thumb {
+            background: #30363d;
+        }
+
+        body.dark-mode .testament-accordion {
+            border-bottom-color: rgba(255, 255, 255, 0.04);
+        }
+
+        body.dark-mode .testament-header {
+            color: #8b949e;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        body.dark-mode .testament-header:active {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        body.dark-mode .testament-header.active {
+            background-color: rgba(88, 166, 255, 0.06);
+            border-left-color: #58a6ff;
+        }
+
+        body.dark-mode .testament-header .testament-count {
+            color: #484f58;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        body.dark-mode .testament-header .accordion-arrow {
+            color: #484f58;
+        }
+
+        body.dark-mode .testament-header.active .accordion-arrow {
+            color: #8b949e;
+        }
+
+        body.dark-mode .testament-body {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        body.dark-mode .book-item {
+            color: #b1bac4;
+        }
+
+        body.dark-mode .book-item:active {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        body.dark-mode .book-item .chapter-count {
+            background: #21262d;
+            color: #484f58;
+        }
+
+        body.dark-mode .book-item.active {
+            background-color: #21262d;
+            color: #f0f6fc;
+            border-left-color: #58a6ff;
+        }
+
+        body.dark-mode .book-item.active .chapter-count {
+            background: #0d1117;
+            color: #8b949e;
+        }
+
+        body.dark-mode .main-content {
+            background: #0d1117;
+        }
+
+        body.dark-mode .top-bar {
+            background: #161b22;
+            border-bottom-color: #30363d;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .top-bar .book-title {
+            color: #f0f6fc;
+        }
+
+        body.dark-mode .menu-toggle {
+            border-color: #30363d;
+            color: #8b949e;
+        }
+
+        body.dark-mode .menu-toggle:active {
+            background: #21262d;
+        }
+
+        body.dark-mode .theme-toggle {
+            border-color: #30363d;
+            color: #8b949e;
+        }
+
+        body.dark-mode .theme-toggle:active {
+            background: #21262d;
+        }
+
+        body.dark-mode .chapter-info {
+            background: #21262d;
+            color: #8b949e;
+        }
+
+        body.dark-mode .pagination-btn {
+            background: #21262d;
+            border-color: #30363d;
+            color: #b1bac4;
+        }
+
+        body.dark-mode .pagination-btn:active:not(:disabled) {
+            background: #30363d;
+        }
+
+        body.dark-mode .pagination-btn:disabled {
+            opacity: 0.25;
+        }
+
+        body.dark-mode .chapter-number {
+            color: #b1bac4;
+        }
+
+        body.dark-mode .chapter-number:active {
+            background: #21262d;
+        }
+
+        body.dark-mode .chapter-number.active {
+            background: #1f6feb;
+            color: white;
+            border-color: #1f6feb;
+            box-shadow: 0 2px 12px rgba(31, 111, 235, 0.3);
+        }
+
+        body.dark-mode .chapter-dots {
+            color: #484f58;
+        }
+
+        body.dark-mode .reading-area {
+            background: #0d1117;
+        }
+
+        body.dark-mode .chapter-container .chapter-heading {
+            color: #58a6ff;
+            border-bottom-color: #21262d;
+        }
+
+        body.dark-mode .verse-text {
+            color: #e6edf3;
+        }
+
+        body.dark-mode .verse-number {
+            color: #f0888e;
+        }
+
+        body.dark-mode .empty-state {
+            color: #8b949e;
+        }
+
+        body.dark-mode .empty-state .icon {
+            opacity: 0.3;
+        }
+
+        body.dark-mode .progress-bar {
+            background: #21262d;
+        }
+
+        body.dark-mode .progress-bar .progress-fill {
+            background: #58a6ff;
+        }
+
+        body.dark-mode .reading-area::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        body.dark-mode .reading-area::-webkit-scrollbar-thumb {
+            background: #30363d;
+        }
+
+        /* --- Utilidades --- */
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 380px) {
+            .top-bar .book-title {
+                font-size: 0.85rem;
+            }
+
+            .chapter-number {
+                font-size: 0.7rem;
+                min-width: 24px;
+                padding: 2px 5px;
+            }
+
+            .pagination-btn {
+                font-size: 0.8rem;
+                min-width: 30px;
+                padding: 4px 8px;
+            }
+
+            .verse-text {
+                font-size: 0.9rem;
+            }
+
+            .reading-area {
+                padding: 15px 12px 70px 12px;
+            }
+
+            .testament-header {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+                min-height: 40px;
+            }
+
+            .book-item {
+                padding: 8px 12px 8px 24px;
+                font-size: 0.8rem;
+                min-height: 36px;
+            }
+        }
+
+        .book-item, .chapter-number, .pagination-btn, .menu-toggle, .theme-toggle,
+        .testament-header {
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN (Pantalla de carga) -->
+<div id="splashScreen" style="position:fixed; top:0; left:0; right:0; bottom:0; background:#1e2a3a; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition: opacity 0.5s;">
+    <div style="font-size:4rem; animation: pulse 1.5s ease-in-out infinite;">📖</div>
+    <h1 style="color:#b0c4de; margin-top:15px; font-size:1.5rem;">Biblia RVR1960</h1>
+    <p style="color:#6c8ba0; margin-top:5px;">Reina-Valera 1960</p>
+    <div style="margin-top:30px; width:40px; height:40px; border:3px solid rgba(255,255,255,0.1); border-top-color:#6ea8fe; border-radius:50%; animation: spin 0.8s linear infinite;"></div>
+    <p id="loadStatus" style="color:#6c8ba0; margin-top:20px; font-size:0.8rem;">Cargando datos...</p>
+</div>
+
+<style>
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<div class="app-container">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- BARRA LATERAL -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>
+                📖 Biblia
+                <span class="version">RVR1960</span>
+            </h2>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Cerrar menú">✕</button>
+        </div>
+
+        <div class="accordion-container" id="accordionContainer">
+            <div class="testament-accordion" id="oldTestamentAccordion">
+                <div class="testament-header" data-testament="old">
+                    <span class="testament-info">
+                        <span class="testament-icon">📜</span>
+                        Antiguo Testamento
+                        <span class="testament-count" id="oldCount">0 libros</span>
+                    </span>
+                    <span class="accordion-arrow">▾</span>
+                </div>
+                <div class="testament-body" id="oldTestamentBody">
+                    <div class="book-list" id="oldTestamentBooks"></div>
+                </div>
+            </div>
+
+            <div class="testament-accordion" id="newTestamentAccordion">
+                <div class="testament-header" data-testament="new">
+                    <span class="testament-info">
+                        <span class="testament-icon">✝️</span>
+                        Nuevo Testamento
+                        <span class="testament-count" id="newCount">0 libros</span>
+                    </span>
+                    <span class="accordion-arrow">▾</span>
+                </div>
+                <div class="testament-body" id="newTestamentBody">
+                    <div class="book-list" id="newTestamentBooks"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main-content">
+
+        <header class="top-bar">
+            <div class="top-bar-row">
+                <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú de libros">☰</button>
+                <span class="book-title" id="currentBookTitle">Selecciona un libro</span>
+                <span class="chapter-info" id="chapterInfo">--</span>
+                <button class="theme-toggle" id="themeToggle" aria-label="Alternar modo oscuro/claro">
+                    🌙
+                </button>
+            </div>
+
+            <div class="pagination-wrapper" id="paginationWrapper"></div>
+        </header>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <section class="reading-area" id="readingArea">
+            <div class="empty-state" id="emptyState">
+                <div class="icon">📖</div>
+                <h3>Bienvenido</h3>
+                <p>Toca ☰ para elegir un libro y comenzar a leer.</p>
+            </div>
+            <div class="chapter-container" id="chapterContainer" style="display: none;"></div>
+        </section>
+    </main>
+</div>
+
+<script>
+    // ============================================================
+    // ===== CONFIGURACIÓN DE LA APP ===============================
+    // ============================================================
+    
+    // --- Ruta del archivo JSON (si existe localmente) ---
+    const BIBLE_DATA_LOCAL = 'reina_valera_1960.json';
+    
+    // --- URL de internet (siempre disponible) ---
+    const BIBLE_DATA_ONLINE = 'https://mrk214.github.io/snapshots/es___spa___spa/RVR1960_vid_149.json';
+    
+    // --- Ruta de tu ícono personalizado (si existe) ---
+    const ICON_PATH = 'icon.png';
+
+    // ============================================================
+    // ===== FIN DE LA CONFIGURACIÓN ==============================
+    // ============================================================
+
+    // --- Generar el manifest.json ---
+    function generateManifest() {
+        const manifest = {
+            name: "Biblia RVR1960",
+            short_name: "Biblia",
+            description: "Lee la Biblia Reina-Valera 1960 en tu dispositivo móvil",
+            start_url: ".",
+            display: "standalone",
+            background_color: "#1e2a3a",
+            theme_color: "#1e2a3a",
+            icons: [
+                {
+                    src: ICON_PATH,
+                    sizes: "512x512",
+                    type: "image/jpeg",
+                    purpose: "any maskable"
+                }
+            ],
+            shortcuts: [
+                {
+                    name: "Biblia",
+                    short_name: "Biblia",
+                    description: "Lee la Biblia en tu móvil",
+                    url: ".",
+                    icons: [
+                        {
+                            src: ICON_PATH,
+                            sizes: "512x512",
+                            type: "image/jpeg",
+                            purpose: "any maskable"
+                        }
+                    ]
+                }
+            ]
+        };
+        return manifest;
+    }
+
+    function setupManifest() {
+        const manifestData = generateManifest();
+        const manifestString = JSON.stringify(manifestData);
+        const base64Manifest = btoa(unescape(encodeURIComponent(manifestString)));
+        const manifestLink = document.getElementById('manifest-link');
+        manifestLink.href = `data:application/json;base64,${base64Manifest}`;
+    }
+
+    setupManifest();
+
+    // ============================================================
+    // ===== APLICACIÓN PRINCIPAL =================================
+    // ============================================================
+
+    const TESTAMENT_MAP = {
+        old: [
+            'Génesis', 'Éxodo', 'Levítico', 'Números', 'Deuteronomio',
+            'Josué', 'Jueces', 'Rut', '1 Samuel', '2 Samuel',
+            '1 Reyes', '2 Reyes', '1 Crónicas', '2 Crónicas', 'Esdras',
+            'Nehemías', 'Ester', 'Job', 'Salmos', 'Proverbios',
+            'Eclesiastés', 'Cantares', 'Isaías', 'Jeremías', 'Lamentaciones',
+            'Ezequiel', 'Daniel', 'Oseas', 'Joel', 'Amós',
+            'Abdías', 'Jonás', 'Miqueas', 'Nahúm', 'Habacuc',
+            'Sofonías', 'Hageo', 'Zacarías', 'Malaquías'
+        ],
+        new: [
+            'Mateo', 'Marcos', 'Lucas', 'Juan', 'Hechos',
+            'Romanos', '1 Corintios', '2 Corintios', 'Gálatas', 'Efesios',
+            'Filipenses', 'Colosenses', '1 Tesalonicenses', '2 Tesalonicenses',
+            '1 Timoteo', '2 Timoteo', 'Tito', 'Filemón', 'Hebreos',
+            'Santiago', '1 Pedro', '2 Pedro', '1 Juan', '2 Juan',
+            '3 Juan', 'Judas', 'Apocalipsis'
+        ]
+    };
+
+    function getTestament(bookName) {
+        if (TESTAMENT_MAP.old.includes(bookName)) return 'old';
+        if (TESTAMENT_MAP.new.includes(bookName)) return 'new';
+        return 'unknown';
+    }
+
+    let bibleData = null;
+    let currentBookIndex = -1;
+    let currentChapterIndex = 0;
+    let openTestament = null;
+
+    const splashScreen = document.getElementById('splashScreen');
+    const loadStatus = document.getElementById('loadStatus');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    const menuToggle = document.getElementById('menuToggle');
+    const themeToggle = document.getElementById('themeToggle');
+    const oldTestamentAccordion = document.getElementById('oldTestamentAccordion');
+    const newTestamentAccordion = document.getElementById('newTestamentAccordion');
+    const oldTestamentBody = document.getElementById('oldTestamentBody');
+    const newTestamentBody = document.getElementById('newTestamentBody');
+    const oldTestamentBooks = document.getElementById('oldTestamentBooks');
+    const newTestamentBooks = document.getElementById('newTestamentBooks');
+    const oldCount = document.getElementById('oldCount');
+    const newCount = document.getElementById('newCount');
+    const paginationWrapper = document.getElementById('paginationWrapper');
+    const currentBookTitle = document.getElementById('currentBookTitle');
+    const chapterInfo = document.getElementById('chapterInfo');
+    const chapterContainer = document.getElementById('chapterContainer');
+    const emptyState = document.getElementById('emptyState');
+    const readingArea = document.getElementById('readingArea');
+    const progressFill = document.getElementById('progressFill');
+
+    // --- Modo oscuro ---
+    function toggleTheme() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        themeToggle.textContent = isDark ? '☀️' : '🌙';
+        try { localStorage.setItem('bible_theme', isDark ? 'dark' : 'light'); } catch (e) {}
+    }
+
+    function loadTheme() {
+        try {
+            const theme = localStorage.getItem('bible_theme');
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggle.textContent = '☀️';
+            } else {
+                document.body.classList.remove('dark-mode');
+                themeToggle.textContent = '🌙';
+            }
+        } catch (e) {}
+    }
+
+    themeToggle.addEventListener('click', toggleTheme);
+
+    // --- Menú lateral ---
+    function toggleSidebar(open) {
+        const shouldOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+        sidebar.classList.toggle('open', shouldOpen);
+        sidebarOverlay.classList.toggle('active', shouldOpen);
+        document.body.style.overflow = shouldOpen ? 'hidden' : '';
+    }
+
+    menuToggle.addEventListener('click', () => toggleSidebar(true));
+    sidebarCloseBtn.addEventListener('click', () => toggleSidebar(false));
+    sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
+
+    // --- Cargar datos (SIEMPRE desde internet, con caché en localStorage) ---
+    async function loadBibleData() {
+        try {
+            loadStatus.textContent = 'Cargando Biblia desde internet...';
+
+            // Intentar cargar desde localStorage primero
+            const cached = localStorage.getItem('bible_data_cached');
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    if (parsed && parsed.books) {
+                        console.log('📖 Datos cargados desde caché local');
+                        bibleData = parsed;
+                        loadStatus.textContent = '✅ Datos cargados (caché)';
+                        onDataLoaded();
+                        // Actualizar en segundo plano
+                        fetchAndUpdateCache();
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            // Si no hay caché, cargar desde internet
+            const response = await fetch(BIBLE_DATA_ONLINE);
+            if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+
+            bibleData = await response.json();
+
+            // Guardar en localStorage para uso offline
+            try {
+                localStorage.setItem('bible_data_cached', JSON.stringify(bibleData));
+                console.log('💾 Datos guardados en caché para uso offline');
+            } catch (e) {}
+
+            loadStatus.textContent = '✅ Datos cargados (internet)';
+            onDataLoaded();
+
+        } catch (error) {
+            console.error('❌ Error al cargar datos:', error);
+            loadStatus.textContent = '❌ Error: Sin conexión y sin caché';
+
+            oldTestamentBooks.innerHTML = `
+                <div style="padding: 20px; color: #f8d7da; text-align: center; font-size: 0.9rem;">
+                    <strong>Error al cargar los datos.</strong><br>
+                    ${error.message}<br><br>
+                    <span style="font-size:0.8rem; color:#6c8ba0;">
+                        💡 Conéctate a internet para cargar la Biblia.<br>
+                        Una vez cargada, estará disponible sin conexión.
+                    </span>
+                </div>
+            `;
+            paginationWrapper.innerHTML = `<span style="color: #6c757d; font-size: 0.8rem;">Error</span>`;
+
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => splashScreen.style.display = 'none', 500);
+            }, 2000);
+        }
+    }
+
+    // --- Actualizar caché en segundo plano ---
+    async function fetchAndUpdateCache() {
+        try {
+            const response = await fetch(BIBLE_DATA_ONLINE);
+            if (response.ok) {
+                const fresh = await response.json();
+                localStorage.setItem('bible_data_cached', JSON.stringify(fresh));
+                console.log('🔄 Caché actualizada en segundo plano');
+            }
+        } catch (e) {}
+    }
+
+    // --- Cuando los datos están cargados ---
+    function onDataLoaded() {
+        renderBooks();
+        if (bibleData.books && bibleData.books.length > 0) {
+            const restored = loadReadingPosition();
+            if (!restored) {
+                selectBook(0);
+            }
+        }
+
+        setTimeout(() => {
+            splashScreen.style.opacity = '0';
+            setTimeout(() => splashScreen.style.display = 'none', 500);
+        }, 300);
+    }
+
+    // --- Renderizar libros ---
+    function renderBooks() {
+        if (!bibleData || !bibleData.books) return;
+
+        oldTestamentBooks.innerHTML = '';
+        newTestamentBooks.innerHTML = '';
+
+        let oldBookCount = 0;
+        let newBookCount = 0;
+
+        bibleData.books.forEach((book, index) => {
+            const div = document.createElement('div');
+            div.className = 'book-item';
+            div.dataset.index = index;
+            div.innerHTML = `
+                <span class="book-name">
+                    <span class="book-icon">📕</span>
+                    ${book.name}
+                </span>
+                <span class="chapter-count">${book.chapters ? book.chapters.length : 0}</span>
+            `;
+            div.addEventListener('click', () => selectBookAndClose(index));
+
+            const testament = getTestament(book.name);
+            if (testament === 'old') {
+                oldTestamentBooks.appendChild(div);
+                oldBookCount++;
+            } else if (testament === 'new') {
+                newTestamentBooks.appendChild(div);
+                newBookCount++;
+            } else {
+                oldTestamentBooks.appendChild(div);
+                oldBookCount++;
+            }
+        });
+
+        oldCount.textContent = `${oldBookCount} libros`;
+        newCount.textContent = `${newBookCount} libros`;
+
+        toggleTestament('old');
+    }
+
+    // --- Toggle de testamento ---
+    function toggleTestament(testament) {
+        const oldHeader = oldTestamentAccordion.querySelector('.testament-header');
+        const newHeader = newTestamentAccordion.querySelector('.testament-header');
+        const oldArrow = oldTestamentAccordion.querySelector('.accordion-arrow');
+        const newArrow = newTestamentAccordion.querySelector('.accordion-arrow');
+
+        if (openTestament === testament) {
+            if (testament === 'old') {
+                oldTestamentBody.classList.remove('open');
+                oldHeader.classList.remove('active');
+                if (oldArrow) oldArrow.classList.remove('open');
+            } else {
+                newTestamentBody.classList.remove('open');
+                newHeader.classList.remove('active');
+                if (newArrow) newArrow.classList.remove('open');
+            }
+            openTestament = null;
+            return;
+        }
+
+        if (openTestament === 'old') {
+            oldTestamentBody.classList.remove('open');
+            oldHeader.classList.remove('active');
+            if (oldArrow) oldArrow.classList.remove('open');
+        } else if (openTestament === 'new') {
+            newTestamentBody.classList.remove('open');
+            newHeader.classList.remove('active');
+            if (newArrow) newArrow.classList.remove('open');
+        }
+
+        if (testament === 'old') {
+            oldTestamentBody.classList.add('open');
+            oldHeader.classList.add('active');
+            if (oldArrow) oldArrow.classList.add('open');
+        } else {
+            newTestamentBody.classList.add('open');
+            newHeader.classList.add('active');
+            if (newArrow) newArrow.classList.add('open');
+        }
+
+        openTestament = testament;
+
+        const container = document.getElementById('accordionContainer');
+        const targetEl = testament === 'old' ? oldTestamentAccordion : newTestamentAccordion;
+        const offset = targetEl.offsetTop - 20;
+        container.scrollTo({ top: offset, behavior: 'smooth' });
+    }
+
+    document.querySelector('.testament-header[data-testament="old"]').addEventListener('click', () => {
+        toggleTestament('old');
+    });
+    document.querySelector('.testament-header[data-testament="new"]').addEventListener('click', () => {
+        toggleTestament('new');
+    });
+
+    function selectBookAndClose(index) {
+        selectBook(index);
+        document.querySelectorAll('.book-item').forEach((el, i) => {
+            el.classList.toggle('active', i === index);
+        });
+        if (window.innerWidth <= 768) {
+            toggleSidebar(false);
+        }
+    }
+
+    function selectBook(index) {
+        if (!bibleData || index < 0 || index >= bibleData.books.length) return;
+
+        currentBookIndex = index;
+        currentChapterIndex = 0;
+        const book = bibleData.books[index];
+
+        const testament = getTestament(book.name);
+        if (testament !== 'unknown') {
+            toggleTestament(testament);
+        }
+
+        currentBookTitle.textContent = book.name;
+        chapterInfo.textContent = `Cap. 1/${book.chapters ? book.chapters.length : 0}`;
+
+        renderPagination(book);
+
+        if (book.chapters && book.chapters.length > 0) {
+            loadChapter(0, false);
+        } else {
+            chapterContainer.style.display = 'none';
+            emptyState.style.display = 'flex';
+            emptyState.querySelector('p').textContent = 'Este libro no tiene capítulos.';
+            chapterInfo.textContent = '--';
+        }
+
+        updateProgress();
+    }
+
+    function renderPagination(book) {
+        paginationWrapper.innerHTML = '';
+
+        const totalChapters = book.chapters ? book.chapters.length : 0;
+        if (totalChapters === 0) {
+            paginationWrapper.innerHTML = `<span style="color: #6c757d; font-size: 0.8rem;">Sin capítulos</span>`;
+            return;
+        }
+
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'pagination-btn';
+        prevBtn.innerHTML = '‹';
+        prevBtn.setAttribute('aria-label', 'Capítulo anterior');
+        prevBtn.disabled = currentChapterIndex === 0;
+        prevBtn.addEventListener('click', () => {
+            if (currentChapterIndex > 0) loadChapter(currentChapterIndex - 1);
+        });
+        paginationWrapper.appendChild(prevBtn);
+
+        const numbersContainer = document.createElement('div');
+        numbersContainer.className = 'chapter-numbers';
+
+        let start = Math.max(0, currentChapterIndex - 3);
+        let end = Math.min(totalChapters, currentChapterIndex + 4);
+
+        if (end - start < 5 && totalChapters > 5) {
+            if (start === 0) end = Math.min(5, totalChapters);
+            else if (end === totalChapters) start = Math.max(0, totalChapters - 5);
+        }
+
+        if (start > 0) {
+            const dots = document.createElement('span');
+            dots.className = 'chapter-dots';
+            dots.textContent = '…';
+            numbersContainer.appendChild(dots);
+        }
+
+        for (let i = start; i < end; i++) {
+            const numBtn = document.createElement('span');
+            numBtn.className = 'chapter-number';
+            if (i === currentChapterIndex) numBtn.classList.add('active');
+            numBtn.textContent = String(i + 1).padStart(2, '0');
+            numBtn.dataset.index = i;
+            numBtn.addEventListener('click', () => loadChapter(i));
+            numbersContainer.appendChild(numBtn);
+        }
+
+        if (end < totalChapters) {
+            const dots = document.createElement('span');
+            dots.className = 'chapter-dots';
+            dots.textContent = '…';
+            numbersContainer.appendChild(dots);
+        }
+
+        paginationWrapper.appendChild(numbersContainer);
+
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'pagination-btn';
+        nextBtn.innerHTML = '›';
+        nextBtn.setAttribute('aria-label', 'Capítulo siguiente');
+        nextBtn.disabled = currentChapterIndex === totalChapters - 1;
+        nextBtn.addEventListener('click', () => {
+            if (currentChapterIndex < totalChapters - 1) loadChapter(currentChapterIndex + 1);
+        });
+        paginationWrapper.appendChild(nextBtn);
+
+        updatePaginationButtons();
+    }
+
+    function updatePaginationButtons() {
+        const book = bibleData.books[currentBookIndex];
+        if (!book || !book.chapters) return;
+
+        const totalChapters = book.chapters.length;
+        const btns = paginationWrapper.querySelectorAll('.pagination-btn');
+        if (btns.length >= 2) {
+            btns[0].disabled = currentChapterIndex === 0;
+            btns[1].disabled = currentChapterIndex === totalChapters - 1;
+        }
+
+        const numbers = paginationWrapper.querySelectorAll('.chapter-number');
+        numbers.forEach((el) => {
+            const index = parseInt(el.dataset.index, 10);
+            el.classList.toggle('active', index === currentChapterIndex);
+        });
+
+        chapterInfo.textContent = `Cap. ${currentChapterIndex + 1}/${totalChapters}`;
+    }
+
+    function loadChapter(index, animate = true) {
+        if (!bibleData || currentBookIndex < 0) return;
+
+        const book = bibleData.books[currentBookIndex];
+        if (!book.chapters || index < 0 || index >= book.chapters.length) return;
+
+        currentChapterIndex = index;
+        const chapter = book.chapters[index];
+
+        renderPagination(book);
+        renderChapterContent(chapter, animate);
+
+        emptyState.style.display = 'none';
+        chapterContainer.style.display = 'block';
+
+        readingArea.scrollTo({ top: 0, behavior: 'smooth' });
+        updateProgress();
+        saveReadingPosition();
+    }
+
+    function renderChapterContent(chapter, animate = true) {
+        let html = `<div class="chapter-container-inner">`;
+
+        chapter.items.forEach(item => {
+            if (item.type === 'heading1') {
+                const titulo = item.lines.join(' ');
+                html += `<div class="chapter-heading">${titulo}</div>`;
+            } else if (item.type === 'verse') {
+                const numero = item.verse_numbers[0];
+                const texto = item.lines.join(' ');
+                html += `
+                    <div class="chapter-verse">
+                        <span class="verse-number">${numero}</span>
+                        <p class="verse-text">${texto}</p>
+                    </div>
+                `;
+            } else {
+                console.warn('Tipo de item no manejado:', item.type);
+                html += `<div style="color: #6c757d; font-style: italic;">[${item.type}] ${item.lines.join(' ')}</div>`;
+            }
+        });
+
+        html += `</div>`;
+        chapterContainer.innerHTML = html;
+
+        if (animate) {
+            chapterContainer.style.animation = 'none';
+            requestAnimationFrame(() => {
+                chapterContainer.style.animation = 'slideIn 0.3s ease';
+            });
+        }
+    }
+
+    function updateProgress() {
+        const book = bibleData.books[currentBookIndex];
+        if (!book || !book.chapters || book.chapters.length === 0) {
+            progressFill.style.width = '0%';
+            return;
+        }
+
+        const total = book.chapters.length;
+        const progress = ((currentChapterIndex + 1) / total) * 100;
+        progressFill.style.width = `${progress}%`;
+    }
+
+    function saveReadingPosition() {
+        try {
+            localStorage.setItem('bible_last_book', currentBookIndex);
+            localStorage.setItem('bible_last_chapter', currentChapterIndex);
+        } catch (e) {}
+    }
+
+    function loadReadingPosition() {
+        try {
+            const book = localStorage.getItem('bible_last_book');
+            const chapter = localStorage.getItem('bible_last_chapter');
+            if (book !== null && chapter !== null && bibleData) {
+                const bookIdx = parseInt(book, 10);
+                const chapIdx = parseInt(chapter, 10);
+                if (bookIdx >= 0 && bookIdx < bibleData.books.length) {
+                    const bookData = bibleData.books[bookIdx];
+                    if (bookData.chapters && chapIdx >= 0 && chapIdx < bookData.chapters.length) {
+                        selectBook(bookIdx);
+                        loadChapter(chapIdx, false);
+                        document.querySelectorAll('.book-item').forEach((el, i) => {
+                            el.classList.toggle('active', i === bookIdx);
+                        });
+                        return true;
+                    }
+                }
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    // --- Gestos de deslizamiento ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isSwiping = false;
+
+    readingArea.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isSwiping = false;
+    }, { passive: true });
+
+    readingArea.addEventListener('touchmove', (e) => {
+        if (!touchStartX) return;
+        const deltaX = e.touches[0].clientX - touchStartX;
+        const deltaY = e.touches[0].clientY - touchStartY;
+
+        if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+            isSwiping = true;
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    readingArea.addEventListener('touchend', (e) => {
+        if (!touchStartX || !isSwiping) {
+            touchStartX = 0;
+            touchStartY = 0;
+            isSwiping = false;
+            return;
+        }
+
+        const deltaX = e.changedTouches[0].clientX - touchStartX;
+        const book = bibleData.books[currentBookIndex];
+
+        if (book && book.chapters) {
+            if (deltaX < -50 && currentChapterIndex < book.chapters.length - 1) {
+                loadChapter(currentChapterIndex + 1);
+                if (navigator.vibrate) navigator.vibrate(10);
+            } else if (deltaX > 50 && currentChapterIndex > 0) {
+                loadChapter(currentChapterIndex - 1);
+                if (navigator.vibrate) navigator.vibrate(10);
+            }
+        }
+
+        touchStartX = 0;
+        touchStartY = 0;
+        isSwiping = false;
+    }, { passive: true });
+
+    // --- Teclado ---
+    document.addEventListener('keydown', (e) => {
+        if (currentBookIndex < 0 || !bibleData) return;
+
+        const book = bibleData.books[currentBookIndex];
+        if (!book || !book.chapters) return;
+
+        let newIndex = -1;
+
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+            newIndex = currentChapterIndex - 1;
+            e.preventDefault();
+        } else if (e.key === 'ArrowRight' || e.key === 'd') {
+            newIndex = currentChapterIndex + 1;
+            e.preventDefault();
+        } else if (e.key === 'Escape') {
+            toggleSidebar(false);
+            e.preventDefault();
+        }
+
+        if (newIndex >= 0 && newIndex < book.chapters.length) {
+            loadChapter(newIndex);
+        }
+    });
+
+    // --- Botón de retroceso ---
+    window.addEventListener('popstate', () => {
+        if (sidebar.classList.contains('open')) {
+            toggleSidebar(false);
+        }
+    });
+
+    // --- INICIAR ---
+    loadTheme();
+    oldTestamentBooks.innerHTML = `<div style="padding: 20px; color: #8899aa; text-align: center; font-size: 0.9rem;">Cargando...</div>`;
+    newTestamentBooks.innerHTML = '';
+    loadBibleData();
+
+    console.log('📱 Biblia RVR1960 - App PWA');
+    console.log('📖 Los datos se cargan desde internet y se guardan en caché para uso offline.');
+    console.log('📂 Los testamentos están organizados en acordeones binarios.');
+    console.log('🌙 Haz clic en el icono de luna/sol para alternar el modo oscuro.');
+</script>
+
+</body>
+</html>
