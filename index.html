@@ -12,8 +12,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Biblia RVR1960">
 
-    <!-- Archivo de configuración de la App (Manifest) -->
-    <link rel="manifest" id="manifest-link">
+    <!-- Archivo de configuración de la App (Manifest) - AHORA EXTERNO -->
+    <link rel="manifest" href="manifest.json">
 
     <style>
         /* --- Reset y Estilos Globales --- */
@@ -968,66 +968,12 @@
     // ===== CONFIGURACIÓN DE LA APP ===============================
     // ============================================================
     
-    // --- Ruta del archivo JSON (si existe localmente) ---
-    const BIBLE_DATA_LOCAL = 'reina_valera_1960.json';
-    
     // --- URL de internet (siempre disponible) ---
     const BIBLE_DATA_ONLINE = 'https://mrk214.github.io/snapshots/es___spa___spa/RVR1960_vid_149.json';
-    
-    // --- Ruta de tu ícono personalizado (si existe) ---
-    const ICON_PATH = 'icon.png';
 
     // ============================================================
     // ===== FIN DE LA CONFIGURACIÓN ==============================
     // ============================================================
-
-    // --- Generar el manifest.json ---
-    function generateManifest() {
-        const manifest = {
-            name: "Biblia RVR1960",
-            short_name: "Biblia",
-            description: "Lee la Biblia Reina-Valera 1960 en tu dispositivo móvil",
-            start_url: ".",
-            display: "standalone",
-            background_color: "#1e2a3a",
-            theme_color: "#1e2a3a",
-            icons: [
-                {
-                    src: ICON_PATH,
-                    sizes: "512x512",
-                    type: "image/jpeg",
-                    purpose: "any maskable"
-                }
-            ],
-            shortcuts: [
-                {
-                    name: "Biblia",
-                    short_name: "Biblia",
-                    description: "Lee la Biblia en tu móvil",
-                    url: ".",
-                    icons: [
-                        {
-                            src: ICON_PATH,
-                            sizes: "512x512",
-                            type: "image/jpeg",
-                            purpose: "any maskable"
-                        }
-                    ]
-                }
-            ]
-        };
-        return manifest;
-    }
-
-    function setupManifest() {
-        const manifestData = generateManifest();
-        const manifestString = JSON.stringify(manifestData);
-        const base64Manifest = btoa(unescape(encodeURIComponent(manifestString)));
-        const manifestLink = document.getElementById('manifest-link');
-        manifestLink.href = `data:application/json;base64,${base64Manifest}`;
-    }
-
-    setupManifest();
 
     // ============================================================
     // ===== APLICACIÓN PRINCIPAL =================================
@@ -1122,10 +1068,10 @@
     sidebarCloseBtn.addEventListener('click', () => toggleSidebar(false));
     sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
 
-    // --- Cargar datos (SIEMPRE desde internet, con caché en localStorage) ---
+    // --- Cargar datos (con caché en localStorage) ---
     async function loadBibleData() {
         try {
-            loadStatus.textContent = 'Cargando Biblia desde internet...';
+            loadStatus.textContent = 'Cargando Biblia...';
 
             // Intentar cargar desde localStorage primero
             const cached = localStorage.getItem('bible_data_cached');
@@ -1610,6 +1556,13 @@
             toggleSidebar(false);
         }
     });
+
+    // --- Registrar Service Worker ---
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(() => console.log('📦 Service Worker registrado'))
+            .catch(() => console.log('ℹ️ Service Worker no disponible'));
+    }
 
     // --- INICIAR ---
     loadTheme();
